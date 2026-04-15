@@ -20,7 +20,7 @@ const Encabezado = () => {
       const { error } = await supabase.auth.signOut();
       if (error) throw error;
 
-      sessionStorage.removeItem("usuario-supabase");
+      localStorage.removeItem("usuario-supabase");
       setMostrarMenu(false);
       navigate("/login");
     } catch (err) {
@@ -146,7 +146,7 @@ const Encabezado = () => {
         <Navbar.Brand
           onClick={() => manejarNavegacion(esCatalogo ? "/catalogo" : "/")}
           className="text-white fw-bold d-flex align-items-center"
-          style={{ cursor: "pointer" }}
+          style={{ cursor: "pointer" }} 
         >
           <img
             alt=""

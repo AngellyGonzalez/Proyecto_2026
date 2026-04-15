@@ -1,21 +1,49 @@
-import React, { useState } from "react";
-import { Container, Row, Col, Button } from "react-bootstrap";
+import React, { useState, useEffect } from "react";
+import { Container, Row, Col, Button, Spinner } from "react-bootstrap";
 import { supabase } from "../database/supabaseconfig";
 
 // Importación de componentes hijos
 import ModalRegistroCategoria from "../components/categorias/ModalRegistroCategoria";
 import NotificacionOperacion from "../components/NotificacionOperacion";
+import TablaCategorias from "../components/categorias/TablaCategorias";
 
 const Categorias = () => {
-  // 1. VARIABLES DE ESTADO (Punto 9 de tus imágenes)
+  // ✅ ESTADOS
   const [toast, setToast] = useState({ mostrar: false, mensaje: "", tipo: "" });
   const [mostrarModal, setMostrarModal] = useState(false);
+
+  const [categorias, setCategorias] = useState([]);
+  const [cargando, setCargando] = useState(true);
+
   const [nuevaCategoria, setNuevaCategoria] = useState({
     nombre_categoria: "",
     descripcion_categoria: "",
   });
 
-  // 2. MÉTODOS DE MANEJO (Punto 9 y 10)
+  // ✅ CARGAR DATOS AL INICIO
+  useEffect(() => {
+    obtenerCategorias();
+  }, []);
+
+  const obtenerCategorias = async () => {
+    setCargando(true);
+
+    const { data, error } = await supabase.from("categorias").select("*");
+
+    if (error) {
+      setToast({
+        mostrar: true,
+        mensaje: "Error al cargar categorías.",
+        tipo: "error",
+      });
+    } else {
+      setCategorias(data);
+    }
+
+    setCargando(false);
+  };
+
+  // ✅ MANEJO DE INPUTS
   const manejoCambioInput = (e) => {
     const { name, value } = e.target;
     setNuevaCategoria((prev) => ({
@@ -24,10 +52,18 @@ const Categorias = () => {
     }));
   };
 
+  // ✅ AGREGAR CATEGORÍA
   const agregarCategoria = async () => {
     try {
-      if (!nuevaCategoria.nombre_categoria.trim() || !nuevaCategoria.descripcion_categoria.trim()) {
-        setToast({ mostrar: true, mensaje: "Debe llenar todos los campos.", tipo: "advertencia" });
+      if (
+        !nuevaCategoria.nombre_categoria.trim() ||
+        !nuevaCategoria.descripcion_categoria.trim()
+      ) {
+        setToast({
+          mostrar: true,
+          mensaje: "Debe llenar todos los campos.",
+          tipo: "advertencia",
+        });
         return;
       }
 
@@ -39,7 +75,11 @@ const Categorias = () => {
       ]);
 
       if (error) {
-        setToast({ mostrar: true, mensaje: "Error al registrar categoría.", tipo: "error" });
+        setToast({
+          mostrar: true,
+          mensaje: "Error al registrar categoría.",
+          tipo: "error",
+        });
         return;
       }
 
@@ -49,14 +89,34 @@ const Categorias = () => {
         tipo: "exito",
       });
 
-      setNuevaCategoria({ nombre_categoria: "", descripcion_categoria: "" });
+      setNuevaCategoria({
+        nombre_categoria: "",
+        descripcion_categoria: "",
+      });
+
       setMostrarModal(false);
+
+      // 🔄 Recargar lista
+      obtenerCategorias();
     } catch (err) {
-      setToast({ mostrar: true, mensaje: "Error inesperado al registrar categoría.", tipo: "error" });
+      setToast({
+        mostrar: true,
+        mensaje: "Error inesperado al registrar categoría.",
+        tipo: "error",
+      });
     }
   };
 
-  // 3. ESTRUCTURA VISUAL (Punto 11)
+  // ✅ FUNCIONES BÁSICAS (puedes mejorarlas luego)
+  const abrirModalEdicion = (categoria) => {
+    console.log("Editar:", categoria);
+  };
+
+  const abrirModalEliminacion = (categoria) => {
+    console.log("Eliminar:", categoria);
+  };
+
+  // ✅ VISTA
   return (
     <Container className="mt-3">
       {/* Título y botón */}
@@ -66,17 +126,50 @@ const Categorias = () => {
             <i className="bi-bookmark-plus-fill me-2"></i> Categorías
           </h3>
         </Col>
+
         <Col xs={3} sm={5} md={5} lg={5} className="text-end">
           <Button onClick={() => setMostrarModal(true)} size="md">
             <i className="bi-plus-lg"></i>
-            <span className="d-none d-sm-inline ms-2">Nueva Categoría</span>
+            <span className="d-none d-sm-inline ms-2">
+              Nueva Categoría
+            </span>
           </Button>
         </Col>
       </Row>
 
       <hr />
 
-      {/* Modal de Registro */}
+      {/* 🔄 Spinner */}
+      {cargando && (
+        <Row className="text-center my-5">
+          <Col>
+            <Spinner animation="border" variant="success" size="lg" />
+            <p className="mt-3 text-muted">Cargando categorías...</p>
+          </Col>
+        </Row>
+      )}
+
+      {/* 📋 Tabla */}
+      {!cargando && categorias.length > 0 && (
+        <Row>
+          <Col lg={12}>
+            <TablaCategorias
+              categorias={categorias}
+              abrirModalEdicion={abrirModalEdicion}
+              abrirModalEliminacion={abrirModalEliminacion}
+            />
+          </Col>
+        </Row>
+      )}
+
+      {/* ⚠️ Si no hay datos */}
+      {!cargando && categorias.length === 0 && (
+        <p className="text-center text-muted">
+          No hay categorías registradas.
+        </p>
+      )}
+
+      {/* 🧾 Modal */}
       <ModalRegistroCategoria
         mostrarModal={mostrarModal}
         setMostrarModal={setMostrarModal}
@@ -85,7 +178,7 @@ const Categorias = () => {
         agregarCategoria={agregarCategoria}
       />
 
-      {/* Notificación */}
+      {/* 🔔 Notificación */}
       <NotificacionOperacion
         mostrar={toast.mostrar}
         mensaje={toast.mensaje}
