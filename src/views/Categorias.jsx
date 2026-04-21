@@ -2,16 +2,21 @@ import React, { useState, useEffect } from "react";
 import { Container, Row, Col, Button, Spinner } from "react-bootstrap";
 import { supabase } from "../database/supabaseconfig";
 
-// Importación de componentes hijos
+// Componentes
 import ModalRegistroCategoria from "../components/categorias/ModalRegistroCategoria";
 import NotificacionOperacion from "../components/NotificacionOperacion";
 import TablaCategorias from "../components/categorias/TablaCategorias";
+import ModalEdicionCategoria from "../components/categorias/ModalEdicionCategoria";
+import ModalEliminacionCategoria from "../components/categorias/ModalEliminacionCategoria";
 
 const Categorias = () => {
   // ✅ ESTADOS
   const [toast, setToast] = useState({ mostrar: false, mensaje: "", tipo: "" });
   const [mostrarModal, setMostrarModal] = useState(false);
-
+  const [mostrarModalEdicion, setMostrarModalEdicion] = useState(false);
+  const [mostrarModalEliminacion, setMostrarModalEliminacion] = useState(false);
+  const [categoriaAEliminar, setCategoriaAEliminar] = useState(null);
+ 
   const [categorias, setCategorias] = useState([]);
   const [cargando, setCargando] = useState(true);
 
@@ -20,7 +25,13 @@ const Categorias = () => {
     descripcion_categoria: "",
   });
 
-  // ✅ CARGAR DATOS AL INICIO
+  const [categoriaEditar, setCategoriaEditar] = useState({
+    id_categoria: null,
+    nombre_categoria: "",
+    descripcion_categoria: "",
+  });
+
+  // ✅ CARGAR DATOS
   useEffect(() => {
     obtenerCategorias();
   }, []);
@@ -28,7 +39,10 @@ const Categorias = () => {
   const obtenerCategorias = async () => {
     setCargando(true);
 
-    const { data, error } = await supabase.from("categorias").select("*");
+    const { data, error } = await supabase
+      .from("categorias")
+      .select("*")
+      .order("id_categoria", { ascending: true }); // 👈 AQUÍ
 
     if (error) {
       setToast({
@@ -43,7 +57,7 @@ const Categorias = () => {
     setCargando(false);
   };
 
-  // ✅ MANEJO DE INPUTS
+  // ✅ INPUT NUEVA CATEGORIA
   const manejoCambioInput = (e) => {
     const { name, value } = e.target;
     setNuevaCategoria((prev) => ({
@@ -52,7 +66,16 @@ const Categorias = () => {
     }));
   };
 
-  // ✅ AGREGAR CATEGORÍA
+  // ✅ INPUT EDICION
+  const manejoCambioInputEdicion = (e) => {
+    const { name, value } = e.target;
+    setCategoriaEditar((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+  };
+
+  // ✅ AGREGAR
   const agregarCategoria = async () => {
     try {
       if (
@@ -85,7 +108,7 @@ const Categorias = () => {
 
       setToast({
         mostrar: true,
-        mensaje: `Categoría "${nuevaCategoria.nombre_categoria}" registrada exitosamente.`,
+        mensaje: `Categoría "${nuevaCategoria.nombre_categoria}" registrada.`,
         tipo: "exito",
       });
 
@@ -95,81 +118,137 @@ const Categorias = () => {
       });
 
       setMostrarModal(false);
-
-      // 🔄 Recargar lista
       obtenerCategorias();
+
     } catch (err) {
       setToast({
         mostrar: true,
-        mensaje: "Error inesperado al registrar categoría.",
+        mensaje: "Error inesperado.",
         tipo: "error",
       });
     }
   };
 
-  // ✅ FUNCIONES BÁSICAS (puedes mejorarlas luego)
+  // ✅ ACTUALIZAR
+  const actualizarCategoria = async () => {
+    try {
+      if (
+        !categoriaEditar.nombre_categoria.trim() ||
+        !categoriaEditar.descripcion_categoria.trim()
+      ) {
+        setToast({
+          mostrar: true,
+          mensaje: "Debe llenar todos los campos.",
+          tipo: "advertencia",
+        });
+        return;
+      }
+
+      const { error } = await supabase
+        .from("categorias")
+        .update({
+          nombre_categoria: categoriaEditar.nombre_categoria,
+          descripcion_categoria: categoriaEditar.descripcion_categoria,
+        })
+        .eq("id_categoria", categoriaEditar.id_categoria);
+
+      if (error) {
+        setToast({
+          mostrar: true,
+          mensaje: "Error al actualizar categoría.",
+          tipo: "error",
+        });
+        return;
+      }
+
+      setToast({
+        mostrar: true,
+        mensaje: "Categoría actualizada correctamente.",
+        tipo: "exito",
+      });
+
+      setMostrarModalEdicion(false);
+      obtenerCategorias();
+
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+const eliminarCategoria = async () => {
+  if (!categoriaAEliminar) return;
+
+  try {
+    const { error } = await supabase
+      .from("categorias")
+      .delete()
+      .eq("id_categoria", categoriaAEliminar.id_categoria);
+
+    if (error) {
+      setToast({
+        mostrar: true,
+        mensaje: `Error al eliminar ${categoriaAEliminar.nombre_categoria}`,
+        tipo: "error",
+      });
+      return;
+    }
+
+    setToast({
+      mostrar: true,
+      mensaje: `Categoría ${categoriaAEliminar.nombre_categoria} eliminada.`,
+      tipo: "exito",
+    });
+
+    setMostrarModalEliminacion(false);
+    obtenerCategorias(); // 👈 no cargarCategorias
+
+  } catch (err) {
+    console.error(err);
+  }
+};
+
+  // ✅ MODALES
   const abrirModalEdicion = (categoria) => {
-    console.log("Editar:", categoria);
+    setCategoriaEditar(categoria);
+    setMostrarModalEdicion(true);
   };
 
   const abrirModalEliminacion = (categoria) => {
-    console.log("Eliminar:", categoria);
-  };
+  setCategoriaAEliminar(categoria);
+  setMostrarModalEliminacion(true);
+};
 
   // ✅ VISTA
   return (
     <Container className="mt-3">
-      {/* Título y botón */}
       <Row className="align-items-center mb-3">
-        <Col xs={9} sm={7} md={7} lg={7} className="d-flex align-items-center">
-          <h3 className="mb-0">
+        <Col>
+          <h3>
             <i className="bi-bookmark-plus-fill me-2"></i> Categorías
           </h3>
         </Col>
 
-        <Col xs={3} sm={5} md={5} lg={5} className="text-end">
-          <Button onClick={() => setMostrarModal(true)} size="md">
-            <i className="bi-plus-lg"></i>
-            <span className="d-none d-sm-inline ms-2">
-              Nueva Categoría
-            </span>
+        <Col className="text-end">
+          <Button onClick={() => setMostrarModal(true)}>
+            + Nueva Categoría
           </Button>
         </Col>
       </Row>
 
       <hr />
 
-      {/* 🔄 Spinner */}
-      {cargando && (
-        <Row className="text-center my-5">
-          <Col>
-            <Spinner animation="border" variant="success" size="lg" />
-            <p className="mt-3 text-muted">Cargando categorías...</p>
-          </Col>
-        </Row>
+      {cargando ? (
+        <Spinner animation="border" />
+      ) : categorias.length > 0 ? (
+        <TablaCategorias
+          categorias={categorias}
+          abrirModalEdicion={abrirModalEdicion}
+          abrirModalEliminacion={abrirModalEliminacion}
+        />
+      ) : (
+        <p>No hay categorías.</p>
       )}
 
-      {/* 📋 Tabla */}
-      {!cargando && categorias.length > 0 && (
-        <Row>
-          <Col lg={12}>
-            <TablaCategorias
-              categorias={categorias}
-              abrirModalEdicion={abrirModalEdicion}
-              abrirModalEliminacion={abrirModalEliminacion}
-            />
-          </Col>
-        </Row>
-      )}
-
-      {/* ⚠️ Si no hay datos */}
-      {!cargando && categorias.length === 0 && (
-        <p className="text-center text-muted">
-          No hay categorías registradas.
-        </p>
-      )}
-
-      {/* 🧾 Modal */}
       <ModalRegistroCategoria
         mostrarModal={mostrarModal}
         setMostrarModal={setMostrarModal}
@@ -178,7 +257,21 @@ const Categorias = () => {
         agregarCategoria={agregarCategoria}
       />
 
-      {/* 🔔 Notificación */}
+      <ModalEdicionCategoria
+        mostrarModalEdicion={mostrarModalEdicion}
+        setMostrarModalEdicion={setMostrarModalEdicion}
+        categoriaEditar={categoriaEditar}
+        manejoCambioInputEdicion={manejoCambioInputEdicion}
+        actualizarCategoria={actualizarCategoria}
+      />
+
+      <ModalEliminacionCategoria
+        mostrarModalEliminacion={mostrarModalEliminacion}
+        setMostrarModalEliminacion={setMostrarModalEliminacion}
+        eliminarCategoria={eliminarCategoria}
+        categoria={categoriaAEliminar}
+      />
+
       <NotificacionOperacion
         mostrar={toast.mostrar}
         mensaje={toast.mensaje}
