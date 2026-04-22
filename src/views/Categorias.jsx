@@ -249,19 +249,18 @@ const eliminarCategoria = async () => {
 </Col>
       </Row>
 
-<div className="d-none d-lg-block">
-  {cargando ? (
-    <Spinner animation="border" />
-  ) : categorias.length > 0 ? (
-    <TablaCategorias
-      categorias={categorias}
-      abrirModalEdicion={abrirModalEdicion}
-      abrirModalEliminacion={abrirModalEliminacion}
-    />
-  ) : (
-    <p>No hay categorías.</p>
-  )}
-</div>
+{/* Lista de categorías cargadas */}
+      {!cargando && categorias.length > 0 && (
+        <Row>
+          <Col lg={12} className="d-none d-lg-block">
+            <TablaCategorias
+              categorias={categorias}
+              abrirModalEdicion={abrirModalEdicion}
+              abrirModalEliminacion={abrirModalEliminacion}
+            />
+          </Col>
+        </Row>
+      )}
 
       <ModalRegistroCategoria
         mostrarModal={mostrarModal}
