@@ -8,6 +8,7 @@ import NotificacionOperacion from "../components/NotificacionOperacion";
 import TablaCategorias from "../components/categorias/TablaCategorias";
 import ModalEdicionCategoria from "../components/categorias/ModalEdicionCategoria";
 import ModalEliminacionCategoria from "../components/categorias/ModalEliminacionCategoria";
+import TarjetaCategoria from "../components/categorias/TarjetaCategoria";
 
 const Categorias = () => {
   // ✅ ESTADOS
@@ -237,17 +238,30 @@ const eliminarCategoria = async () => {
 
       <hr />
 
-      {cargando ? (
-        <Spinner animation="border" />
-      ) : categorias.length > 0 ? (
-        <TablaCategorias
-          categorias={categorias}
-          abrirModalEdicion={abrirModalEdicion}
-          abrirModalEliminacion={abrirModalEliminacion}
-        />
-      ) : (
-        <p>No hay categorías.</p>
-      )}
+    {/* ✅ TARJETAS (NUEVO) */}
+      <Row>
+<Col xs={12} className="d-lg-none">
+  <TarjetaCategoria
+    categorias={categorias}
+    abrirModalEdicion={abrirModalEdicion}
+    abrirModalEliminacion={abrirModalEliminacion}
+  />
+</Col>
+      </Row>
+
+<div className="d-none d-lg-block">
+  {cargando ? (
+    <Spinner animation="border" />
+  ) : categorias.length > 0 ? (
+    <TablaCategorias
+      categorias={categorias}
+      abrirModalEdicion={abrirModalEdicion}
+      abrirModalEliminacion={abrirModalEliminacion}
+    />
+  ) : (
+    <p>No hay categorías.</p>
+  )}
+</div>
 
       <ModalRegistroCategoria
         mostrarModal={mostrarModal}
