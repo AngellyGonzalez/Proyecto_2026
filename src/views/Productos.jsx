@@ -4,9 +4,10 @@ import { supabase } from "../database/supabaseconfig";
 import ModalRegistroProducto from "../components/productos/ModalRegistroProducto";
 import NotificacionOperacion from "../components/NotificacionOperacion";
 import CuadroBusquedas from "../components/busquedas/CuadroBusquedas";
+import TablaProductos from "../components/productos/TablaProductos";
 
 const Productos = () => {
-  const [productos, setProductos] = useState([]);
+const [productos, setProductos] = useState([]);
 const [productosFiltrados, setProductosFiltrados] = useState([]);
 const [categorias, setCategorias] = useState([]);
 const [textoBusqueda, setTextoBusqueda] = useState("");
@@ -76,7 +77,39 @@ useEffect(() => {
 
 useEffect(() => {
   cargarCategorias();
+  cargarProductos(); 
 }, []);
+
+
+const cargarProductos = async () => {
+    try {
+      setCargando(true);
+      const { data, error } = await supabase
+        .from("productos")
+        .select("*")
+        .order("id_producto", { ascending: true });
+      if (error) {
+        console.error("Error al cargar productos:", error.message);
+        setToast({
+          mostrar: true,
+          mensaje: "Error al cargar productos.",
+          tipo: "error",
+        });
+        return;
+      }
+      setProductos(data || []);
+    } catch (err) {
+      console.error("Excepción al cargar productos:", err.message);
+      setToast({
+        mostrar: true,
+        mensaje: "Error inesperado al cargar productos.",
+        tipo: "error",
+      });
+    } finally {
+      setCargando(false);
+    }
+  };
+
 
 const cargarCategorias = async () => {
   try {
@@ -91,6 +124,8 @@ const cargarCategorias = async () => {
     console.error("Error al cargar categorías:", err);
   }
 };
+
+
 const agregarProducto = async () => {
   try {
     if (
@@ -133,6 +168,8 @@ const agregarProducto = async () => {
     ]);
 
     if (error) throw error;
+
+    await cargarProductos();
 
     setNuevoProducto({
       nombre_producto: "",
@@ -178,6 +215,23 @@ const agregarProducto = async () => {
       />
     </Col>
   </Row>
+
+  <Row>
+  <Col>
+    <TablaProductos
+      productos={productosFiltrados}
+      abrirModalEdicion={(producto) => {
+        setProductoEditar(producto);
+        setMostrarModalEdicion(true);
+      }}
+      abrirModalEliminacion={(producto) => {
+        setProductoAEliminar(producto);
+        setMostrarModalEliminacion(true);
+      }}
+    />
+  </Col>
+</Row>
+
 
   {/* Modales */}
 
