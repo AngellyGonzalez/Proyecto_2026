@@ -327,18 +327,6 @@ const categoriasPaginadas = categoriasFiltradas.slice(
         </Col>
       </Row>
 
-      {/* Lista de categorías cargadas */}
-      {!cargando && categorias.length > 0 && (
-        <Row>
-          <Col lg={12} className="d-none d-lg-block">
-            <TablaCategorias
-              categorias={categorias}
-              abrirModalEdicion={abrirModalEdicion}
-              abrirModalEliminacion={abrirModalEliminacion}
-            />
-          </Col>
-        </Row>
-      )}
 
       <ModalRegistroCategoria
         mostrarModal={mostrarModal}
