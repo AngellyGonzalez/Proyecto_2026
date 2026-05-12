@@ -57,14 +57,13 @@ const TarjetaCategoria = ({
                 aria-label={`Categoría ${categoria.nombre_categoria}`}
               >
                 <Card.Body
-                  className={`p-2 tarjeta-categoria-cuerpo ${
-                    tarjetaActiva
+                  className={`p-2 tarjeta-categoria-cuerpo ${tarjetaActiva
                       ? "tarjeta-categoria-cuerpo-activa"
                       : "tarjeta-categoria-cuerpo-inactiva"
-                  }`}
+                    }`}
                 >
                   <Row className="align-items-center gx-3">
-                    
+
                     <Col xs={2} className="px-2">
                       <div className="bg-light d-flex align-items-center justify-content-center rounded tarjeta-categoria-placeholder-imagen">
                         <i className="bi bi-bookmark text-muted fs-3"></i>
