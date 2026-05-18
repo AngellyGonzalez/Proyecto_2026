@@ -9,6 +9,37 @@ import Paginacion from "../components/ordenamiento/Paginacion";
 import NotificacionOperacion from "../components/NotificacionOperacion";
 import CuadroBusquedas from "../components/busquedas/CuadroBusquedas";
 import TarjetaProducto from "../components/productos/TarjetasProductos";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
+
+const generarPDFProducto = (producto) => {
+
+  const doc = new jsPDF();
+
+  // Título
+  doc.setFontSize(18);
+  doc.text("Reporte de Producto", 14, 20);
+
+  // Línea decorativa
+  doc.line(14, 25, 195, 25);
+
+  // Información del producto
+  doc.setFontSize(12);
+
+  autoTable(doc, {
+    startY: 35,
+    head: [["Campo", "Valor"]],
+    body: [
+      ["ID", producto.id_producto],
+      ["Nombre", producto.nombre_producto],
+      ["Descripción", producto.descripcion_producto],
+      ["Precio", producto.precio_venta],
+    ],
+  });
+
+  // Descargar PDF
+  doc.save(`producto_${producto.id_producto}.pdf`);
+};
 
 const Productos = () => {
   const [productos, setProductos] = useState([]);
@@ -364,6 +395,7 @@ const cargarProductos = async () => {
             cargando={cargando}
             abrirModalEdicion={abrirModalEdicion}
             abrirModalEliminacion={abrirModalEliminacion}
+            generarPDFProducto={generarPDFProducto}
           />
         </Col>
       </Row>
