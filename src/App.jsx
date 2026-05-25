@@ -5,6 +5,8 @@ import Categorias from "./views/Categorias";
 import Catalogo from "./views/Catalogo";
 import Productos from "./views/Productos";
 import Empleados from "./views/Empleado";
+import Clientes from "./views/Clientes";
+import Ventas from "./views/Ventas";
 import Login from "./views/Login";
 import RutaProtegida from "./components/rutas/RutaProtegida";
 import Pagina404 from "./views/Pagina404";
@@ -16,7 +18,7 @@ const App = () => {
       <Encabezado />
       <main className="margen-superior-main">
         <Routes>
-         <Route path="/login" element={<Login />} />
+          <Route path="/login" element={<Login />} />
           <Route
             path="/"
             element={
@@ -57,6 +59,25 @@ const App = () => {
               </RutaProtegida>
             }
           />
+
+          <Route
+            path="/clientes"
+            element={
+              <RutaProtegida>
+                <Clientes />
+              </RutaProtegida>
+            }
+          />
+
+          <Route
+            path="/ventas"
+            element={
+              <RutaProtegida>
+                <Ventas />
+              </RutaProtegida>
+            }
+          />
+
           <Route path="*" element={<Pagina404 />} />
         </Routes>
       </main>
