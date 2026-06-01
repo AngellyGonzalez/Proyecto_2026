@@ -3,8 +3,14 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { Container, Nav, Navbar, Offcanvas } from "react-bootstrap";
 import logo from "../../assets/logo.png";
 import { supabase } from "../../database/supabaseconfig";
+import ChatIA from "../ia/ChatIA";
+
 
 const Encabezado = () => {
+
+  const [mostrarChatIA, setMostrarChatIA] = useState(false);
+
+
   const [mostrarMenu, setMostrarMenu] = useState(false);
   const navigate = useNavigate();
   const location = useLocation(); // Para detectar la ruta actual
@@ -99,6 +105,13 @@ const Encabezado = () => {
               <strong>Empleados</strong>
             </Nav.Link>
 
+            <Nav.Link onClick={() => setMostrarChatIA(true)} className="text-white">
+              <i className="bi bi-robot me-2"></i>
+            </Nav.Link>
+
+
+
+
             <Nav.Link
               onClick={() => manejarNavegacion("/clientes")}
               className={mostrarMenu ? "color-texto-marca" : "text-white"}
@@ -107,7 +120,7 @@ const Encabezado = () => {
               <strong>Clientes</strong>
             </Nav.Link>
 
-             <Nav.Link
+            <Nav.Link
               onClick={() => manejarNavegacion("/ventas")}
               className={mostrarMenu ? "color-texto-marca" : "text-white"}
             >
@@ -162,7 +175,7 @@ const Encabezado = () => {
   }
 
   return (
-    <Navbar
+    <><Navbar
       expand="md"
       fixed="top"
       className="color-navbar shadow-lg"
@@ -209,6 +222,8 @@ const Encabezado = () => {
         </Navbar.Offcanvas>
       </Container>
     </Navbar>
+    <ChatIA mostrar={mostrarChatIA} onCerrar={() => setMostrarChatIA(false)} /></>
+
   );
 
 };
