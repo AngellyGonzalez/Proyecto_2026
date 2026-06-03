@@ -8,6 +8,7 @@ import Empleados from "./views/Empleado";
 import Clientes from "./views/Clientes";
 import Ventas from "./views/Ventas";
 import Login from "./views/Login";
+import Dashboard from "./views/Dashboard";
 import RutaProtegida from "./components/rutas/RutaProtegida";
 import Pagina404 from "./views/Pagina404";
 import "./App.css";
@@ -74,6 +75,15 @@ const App = () => {
             element={
               <RutaProtegida>
                 <Ventas />
+              </RutaProtegida>
+            }
+          />
+
+          <Route
+            path="/Dashboard"
+            element={
+              <RutaProtegida>
+                <Dashboard />
               </RutaProtegida>
             }
           />
