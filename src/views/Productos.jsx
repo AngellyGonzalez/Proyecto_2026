@@ -1,6 +1,6 @@
 import { Container, Row, Col, Button, Alert, Spinner } from "react-bootstrap";
 import { supabase } from "../database/supabaseconfig";
-import React, {useEffect, useState} from "react";
+import React, { useEffect, useState } from "react";
 import ModalRegistroProducto from "../components/productos/ModalRegistroProducto";
 import TablaProductos from "../components/productos/TablaProductos";
 import ModalEdicionProducto from "../components/productos/ModalEdicionProducto";
@@ -11,6 +11,9 @@ import CuadroBusquedas from "../components/busquedas/CuadroBusquedas";
 import TarjetaProducto from "../components/productos/TarjetasProductos";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
+import ModalEnvioCorreoProductos from "../components/productos/ModalEnvioCorreoProductos";
+import emailjs from '@emailjs/browser';
+
 
 const generarPDFProducto = (producto) => {
 
@@ -42,6 +45,11 @@ const generarPDFProducto = (producto) => {
 };
 
 const Productos = () => {
+
+  const [mostrarModalCorreo, setMostrarModalCorreo] = useState(false);
+  const [emailDestino, setEmailDestino] = useState("");
+  const [enviandoCorreo, setEnviandoCorreo] = useState(false);
+
   const [productos, setProductos] = useState([]);
   const [productosFiltrados, setProductosFiltrados] = useState([]);
   const [categorias, setCategorias] = useState([]);
@@ -137,7 +145,7 @@ const Productos = () => {
       console.error("Error al cargar categorias:", err);
     }
   };
-const cargarProductos = async () => {
+  const cargarProductos = async () => {
     try {
       setCargando(true);
       const { data, error } = await supabase
@@ -181,42 +189,42 @@ const cargarProductos = async () => {
 
         });
 
-      if (uploadError) throw uploadError; 
+      if (uploadError) throw uploadError;
 
-        const {data: urlData} = await supabase.storage
+      const { data: urlData } = await supabase.storage
         .from("imagenes_productos")
         .getPublicUrl(nombreArchivo);
-        const urlPublica = urlData.publicUrl;
+      const urlPublica = urlData.publicUrl;
 
-        const { error } = await supabase.from("productos").insert([
-          {
-            nombre_producto: nuevoProducto.nombre_producto,
-            descripcion_producto: nuevoProducto.descripcion_producto || null,
-            categoria_producto: nuevoProducto.categoria_producto,
-            precio_venta: parseFloat(nuevoProducto.precio_venta),
-            url_imagen: urlPublica,
-          },
-        ]);
+      const { error } = await supabase.from("productos").insert([
+        {
+          nombre_producto: nuevoProducto.nombre_producto,
+          descripcion_producto: nuevoProducto.descripcion_producto || null,
+          categoria_producto: nuevoProducto.categoria_producto,
+          precio_venta: parseFloat(nuevoProducto.precio_venta),
+          url_imagen: urlPublica,
+        },
+      ]);
 
-        if (error) throw error;
+      if (error) throw error;
 
-        // Recargar la lista de productos
-        await cargarProductos();
+      // Recargar la lista de productos
+      await cargarProductos();
 
-        setNuevoProducto({
-          nombre_producto: "",
-          descripcion_producto: "",
-          categoria_producto: "",
-          precio_venta: "",
-          archivo: null,
-        });
-        
-        setToast({ mostrar: true, mensaje: "Producto registrado correctamente", tipo: "exito" });
+      setNuevoProducto({
+        nombre_producto: "",
+        descripcion_producto: "",
+        categoria_producto: "",
+        precio_venta: "",
+        archivo: null,
+      });
 
-      }catch (err) {
-        console.error("Error al agregar producto:", err);
-        setToast({ mostrar: true, mensaje: "Error al registrar producto", tipo: "error" });
-      }
+      setToast({ mostrar: true, mensaje: "Producto registrado correctamente", tipo: "exito" });
+
+    } catch (err) {
+      console.error("Error al agregar producto:", err);
+      setToast({ mostrar: true, mensaje: "Error al registrar producto", tipo: "error" });
+    }
   };
 
   const abrirModalEdicion = (producto) => {
@@ -253,89 +261,89 @@ const cargarProductos = async () => {
   };
 
   const actualizarProducto = async () => {
-  try {
+    try {
 
-    if (
-      !productoEditar.nombre_producto.trim() ||
-      !productoEditar.categoria_producto ||
-      !productoEditar.precio_venta
-    ) {
+      if (
+        !productoEditar.nombre_producto.trim() ||
+        !productoEditar.categoria_producto ||
+        !productoEditar.precio_venta
+      ) {
+        setToast({
+          mostrar: true,
+          mensaje: "Completa los campos obligatorios",
+          tipo: "advertencia",
+        });
+        return;
+      }
+
+      setMostrarModalEdicion(false);
+
+      let datosActualizados = {
+        nombre_producto: productoEditar.nombre_producto,
+        descripcion_producto: productoEditar.descripcion_producto || null,
+        categoria_producto: productoEditar.categoria_producto,
+        precio_venta: parseFloat(productoEditar.precio_venta),
+        url_imagen: productoEditar.url_imagen,
+      };
+
+      if (productoEditar.archivo) {
+        const nombreArchivo = `${Date.now()}_${productoEditar.archivo.name}`;
+
+        const { error: uploadError } = await supabase.storage
+          .from("imagenes_productos")
+          .upload(nombreArchivo, productoEditar.archivo);
+
+        if (uploadError) throw uploadError;
+
+        const { data: urlData } = supabase.storage
+          .from("imagenes_productos")
+          .getPublicUrl(nombreArchivo);
+
+        datosActualizados.url_imagen = urlData.publicUrl;
+
+        if (productoEditar.url_imagen) {
+          const nombreAnterior = productoEditar.url_imagen.split("/").pop().split("?")[0];
+          await supabase.storage
+            .from("imagenes_productos")
+            .remove([nombreAnterior])
+            .catch(() => { });
+        }
+      }
+
+      const { error } = await supabase
+        .from("productos")
+        .update(datosActualizados)
+        .eq("id_producto", productoEditar.id_producto);
+
+      if (error) throw error;
+
+      await cargarProductos();
+
+      setProductoEditar({
+        id_producto: "",
+        nombre_producto: "",
+        descripcion_producto: "",
+        categoria_producto: "",
+        precio_venta: "",
+        url_imagen: "",
+        archivo: null,
+      });
+
       setToast({
         mostrar: true,
-        mensaje: "Completa los campos obligatorios",
-        tipo: "advertencia",
+        mensaje: "Producto actualizado correctamente",
+        tipo: "exito",
       });
-      return;
+
+    } catch (err) {
+      console.error("Error al actualizar:", err);
+      setToast({
+        mostrar: true,
+        mensaje: "Error al actualizar producto",
+        tipo: "error",
+      });
     }
-
-    setMostrarModalEdicion(false);
-
-    let datosActualizados = {
-      nombre_producto: productoEditar.nombre_producto,
-      descripcion_producto: productoEditar.descripcion_producto || null,
-      categoria_producto: productoEditar.categoria_producto,
-      precio_venta: parseFloat(productoEditar.precio_venta),
-      url_imagen: productoEditar.url_imagen,
-    };
-
-    if (productoEditar.archivo) {
-      const nombreArchivo = `${Date.now()}_${productoEditar.archivo.name}`;
-
-      const { error: uploadError } = await supabase.storage
-        .from("imagenes_productos")
-        .upload(nombreArchivo, productoEditar.archivo);
-
-      if (uploadError) throw uploadError;
-
-      const { data: urlData } = supabase.storage
-        .from("imagenes_productos")
-        .getPublicUrl(nombreArchivo);
-
-      datosActualizados.url_imagen = urlData.publicUrl;
-
-      if (productoEditar.url_imagen) {
-        const nombreAnterior = productoEditar.url_imagen.split("/").pop().split("?")[0];
-        await supabase.storage
-          .from("imagenes_productos")
-          .remove([nombreAnterior])
-          .catch(() => {});
-      }
-    }
-
-    const { error } = await supabase
-      .from("productos")
-      .update(datosActualizados)
-      .eq("id_producto", productoEditar.id_producto);
-
-    if (error) throw error;
-
-    await cargarProductos();
-
-    setProductoEditar({
-      id_producto: "",
-      nombre_producto: "",
-      descripcion_producto: "",
-      categoria_producto: "",
-      precio_venta: "",
-      url_imagen: "",
-      archivo: null,
-    });
-
-    setToast({
-      mostrar: true,
-      mensaje: "Producto actualizado correctamente",
-      tipo: "exito",
-    });
-
-  } catch (err) {
-    console.error("Error al actualizar:", err);
-    setToast({
-      mostrar: true,
-      mensaje: "Error al actualizar producto",
-      tipo: "error",
-    });
-  }
-};
+  };
   const eliminarProducto = async () => {
     if (!productoAEliminar) return;
     try {
@@ -356,24 +364,121 @@ const cargarProductos = async () => {
     }
   };
 
+
+  // Inicializar EmailJS
+  useEffect(() => {
+    emailjs.init(import.meta.env.VITE_EMAILJS_PUBLIC_KEY);
+  }, []);
+  const abrirModalCorreo = () => {
+    setEmailDestino("");
+    setMostrarModalCorreo(true);
+  };
+
+  const formatearProductosParaCorreo = () => {
+    if (productos.length === 0) return "No hay productos registrados.";
+
+    let texto = `LISTADO DE PRODUCTOS\n\n`;
+    texto += `Fecha: ${new Date().toLocaleDateString("es-NI")}\n`;
+    texto += `Total de productos: ${productos.length}\n\n`;
+
+ productos.forEach((prod, index) => {
+  texto += `${index + 1}. Nombre: ${prod.nombre}\n`;
+
+  if (prod.descripcion_producto) {
+    texto += `   Descripción: ${prod.descripcion_producto}\n`;
+  }
+
+  if (prod.precio) {
+    texto += `   Precio: ${prod.precio}\n`;
+  }
+
+  if (prod.imagen) {
+    texto += `   Imagen: ${prod.imagen}\n`;
+  }
+
+  texto += `\n`;
+});
+
+return texto;
+};
+
+  const enviarCorreoProductos = () => {
+    if (!emailDestino.trim()) {
+      setToast({
+        mostrar: true,
+        mensaje: "Por favor ingresa un correo destino.",
+        tipo: "advertencia",
+      });
+      return;
+    }
+
+    setEnviandoCorreo(true);
+
+    const mensaje = formatearProductosParaCorreo();
+
+    const templateParams = {
+      to_name: "Administrador",
+      user_email: emailDestino,
+      message: mensaje,
+      fecha_envio: new Date().toLocaleDateString("es-NI")
+    };
+
+    emailjs.send(
+      import.meta.env.VITE_EMAILJS_SERVICE_ID,
+      import.meta.env.VITE_EMAILJS_TEMPLATE_ID,
+      templateParams
+    )
+      .then(() => {
+        setToast({
+          mostrar: true,
+          mensaje: "Correo enviado correctamente.",
+          tipo: "exito",
+        });
+        setMostrarModalCorreo(false);
+        setEmailDestino("");
+      })
+      .catch((error) => {
+        console.error("Error EmailJS:", error);
+        setToast({
+          mostrar: true,
+          mensaje: "Error al enviar el correo.",
+          tipo: "error",
+        });
+      })
+      .finally(() => {
+        setEnviandoCorreo(false);
+      });
+  };
+
+
+
+
   return (
     <Container className="mt-3">
 
       <Row className="align-items-center mb-3">
-
-        <Col className="d-flex align-items-center">
+        <Col xs={8} sm={8} md={8} lg={8} className="d-flex align-items-center">
           <h3 className="mb-0">
-            <i className="bi-bag-heart-fill me-2"></i> Productos
+            <i className="bi-bookmark-plus-fill me-2"></i> Productos
           </h3>
         </Col>
-
-        <Col xs={3} sm={5} md={5} lg={5} className="text-end">
-          <Button onClick={() => setMostrarModal(true)} size="md">
+        <Col xs={2} sm={2} md={2} lg={2} className="text-end">
+          <Button variant="primary" onClick={abrirModalCorreo} size="md">
+            <i className="bi bi-envelope"></i>
+            <span className="d-none d-lg-inline ms-2">Enviar por Correo</span>
+          </Button>
+        </Col>
+        <Col xs={2} sm={2} md={2} lg={2} className="text-end">
+          <Button
+            onClick={() => setMostrarModal(true)}
+            size="md"
+          >
             <i className="bi-plus-lg"></i>
-            <span className="d-none d-sm-inline ms-2">Nuevo Producto</span>
+            <span className="d-none d-lg-inline ms-2">Nuevo Producto</span>
           </Button>
         </Col>
       </Row>
+
 
       <hr />
 
@@ -448,7 +553,19 @@ const cargarProductos = async () => {
         productoAEliminar={productoAEliminar}
         eliminarProducto={eliminarProducto}
       />
+<ModalEnvioCorreoProductos
+  mostrarModalCorreo={mostrarModalCorreo}
+  setMostrarModalCorreo={setMostrarModalCorreo}
+  emailDestino={emailDestino}
+  setEmailDestino={setEmailDestino}
+  enviandoCorreo={enviandoCorreo}
+  enviarCorreoProductos={enviarCorreoProductos}
+  totalProductos={productos.length}
+/>
+
     </Container>
+
+
   );
 };
 
