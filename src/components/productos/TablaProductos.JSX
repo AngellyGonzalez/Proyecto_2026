@@ -3,7 +3,7 @@ import { Table, Spinner, Button } from "react-bootstrap";
 import "bootstrap-icons/font/bootstrap-icons.css";
 import { supabase } from "../../database/supabaseconfig";
 
-const TablaProductos = ({ productos, abrirModalEdicion, abrirModalEliminacion, generarPDFProducto }) => {
+const TablaProductos = ({ productos, abrirModalEdicion, abrirModalEliminacion, generarPDFProducto, generarQRImagen, copiarProducto }) => {
 
   const [loading, setLoading] = useState(true);
 
@@ -73,6 +73,25 @@ const TablaProductos = ({ productos, abrirModalEdicion, abrirModalEliminacion, g
                     onClick={() => generarPDFProducto(producto)}
                   >
                     <i className="bi bi-file-earmark-pdf"></i>
+                  </Button>
+
+                  <Button
+                    variant="outline-primary"
+                    size="sm"
+                    onClick={() => generarQRImagen(producto)}
+                    title="Generar código QR de la imagen"
+                  >
+                    <i className="bi bi-qr-code"></i>
+                  </Button>
+
+                  <Button
+                    variant="outline-success"
+                    size="sm"
+                    className="m-1"
+                    onClick={() => copiarProducto(producto)}
+                    title="Copiar al portapapeles"
+                  >
+                    <i className="bi bi-clipboard"></i>
                   </Button>
 
                 </td>

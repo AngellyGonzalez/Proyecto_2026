@@ -13,6 +13,7 @@ import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import ModalEnvioCorreoProductos from "../components/productos/ModalEnvioCorreoProductos";
 import emailjs from '@emailjs/browser';
+import ModalQRProducto from "../components/productos/ModalQRProducto";
 
 
 const generarPDFProducto = (producto) => {
@@ -80,6 +81,8 @@ const Productos = () => {
 
   const [productoAEliminar, setProductoAEliminar] = useState(null);
   const [toast, setToast] = useState({ mostrar: false, mensaje: "", tipo: "" });
+  const [mostrarModalQR, setMostrarModalQR] = useState(false);
+  const [productoQR, setProductoQR] = useState(null);
   const [registrosPorPagina, establecerRegistrosPorPagina] = useState(5);
   const [paginaActual, establecerPaginaActual] = useState(1);
 
@@ -99,6 +102,49 @@ const Productos = () => {
 
   const manejarBusqueda = (e) => {
     setTextoBusqueda(e.target.value);
+  };
+
+  const obtenerNombreCategoria = (idCategoria) => {
+    return categorias.find((categoria) => categoria.id_categoria === idCategoria)
+      ?.nombre_categoria || "";
+  };
+
+  const generarQRImagen = (producto) => {
+    if (!producto?.url_imagen) {
+      setToast({
+        mostrar: true,
+        mensaje: "Este producto no tiene imagen asociada",
+        tipo: "advertencia",
+      });
+      return;
+    }
+
+    setProductoQR(producto);
+    setMostrarModalQR(true);
+  };
+
+  const copiarProducto = async (producto) => {
+    if (!producto) return;
+
+    const texto = `ID: ${producto.id_producto}\nNombre: ${producto.nombre_producto}\nCategoría: ${obtenerNombreCategoria(producto.categoria_producto)}\nPrecio: $${Number(producto.precio_venta).toFixed(2)}`;
+
+    try {
+      await navigator.clipboard.writeText(texto);
+
+      setToast({
+        mostrar: true,
+        mensaje: `Producto "${producto.nombre_producto}" copiado al portapapeles`,
+        tipo: "exito",
+      });
+    } catch (err) {
+      console.error("Error al copiar:", err);
+
+      setToast({
+        mostrar: true,
+        mensaje: "No se pudo copiar al portapapeles",
+        tipo: "error",
+      });
+    }
   };
 
   useEffect(() => {
@@ -381,26 +427,26 @@ const Productos = () => {
     texto += `Fecha: ${new Date().toLocaleDateString("es-NI")}\n`;
     texto += `Total de productos: ${productos.length}\n\n`;
 
- productos.forEach((prod, index) => {
-  texto += `${index + 1}. Nombre: ${prod.nombre}\n`;
+    productos.forEach((prod, index) => {
+      texto += `${index + 1}. Nombre: ${prod.nombre}\n`;
 
-  if (prod.descripcion_producto) {
-    texto += `   Descripción: ${prod.descripcion_producto}\n`;
-  }
+      if (prod.descripcion_producto) {
+        texto += `   Descripción: ${prod.descripcion_producto}\n`;
+      }
 
-  if (prod.precio) {
-    texto += `   Precio: ${prod.precio}\n`;
-  }
+      if (prod.precio) {
+        texto += `   Precio: ${prod.precio}\n`;
+      }
 
-  if (prod.imagen) {
-    texto += `   Imagen: ${prod.imagen}\n`;
-  }
+      if (prod.imagen) {
+        texto += `   Imagen: ${prod.imagen}\n`;
+      }
 
-  texto += `\n`;
-});
+      texto += `\n`;
+    });
 
-return texto;
-};
+    return texto;
+  };
 
   const enviarCorreoProductos = () => {
     if (!emailDestino.trim()) {
@@ -496,11 +542,12 @@ return texto;
         <Col>
           <TablaProductos
             productos={productosFiltrados.slice((paginaActual - 1) * registrosPorPagina, paginaActual * registrosPorPagina)}
-            categorias={categorias}
             cargando={cargando}
             abrirModalEdicion={abrirModalEdicion}
             abrirModalEliminacion={abrirModalEliminacion}
             generarPDFProducto={generarPDFProducto}
+            generarQRImagen={generarQRImagen}
+            copiarProducto={copiarProducto}
           />
         </Col>
       </Row>
@@ -553,15 +600,21 @@ return texto;
         productoAEliminar={productoAEliminar}
         eliminarProducto={eliminarProducto}
       />
-<ModalEnvioCorreoProductos
-  mostrarModalCorreo={mostrarModalCorreo}
-  setMostrarModalCorreo={setMostrarModalCorreo}
-  emailDestino={emailDestino}
-  setEmailDestino={setEmailDestino}
-  enviandoCorreo={enviandoCorreo}
-  enviarCorreoProductos={enviarCorreoProductos}
-  totalProductos={productos.length}
-/>
+      <ModalEnvioCorreoProductos
+        mostrarModalCorreo={mostrarModalCorreo}
+        setMostrarModalCorreo={setMostrarModalCorreo}
+        emailDestino={emailDestino}
+        setEmailDestino={setEmailDestino}
+        enviandoCorreo={enviandoCorreo}
+        enviarCorreoProductos={enviarCorreoProductos}
+        totalProductos={productos.length}
+      />
+
+      <ModalQRProducto
+        mostrar={mostrarModalQR}
+        onHide={() => setMostrarModalQR(false)}
+        producto={productoQR}
+      />
 
     </Container>
 
